@@ -1,0 +1,50 @@
+name: update-flake-lock
+on:
+  workflow_dispatch: # allows manual triggering
+  workflow_call:
+    inputs:
+      branch:
+        description: Branch name to build on
+        default: ""
+        required: false
+        type: string
+  schedule:
+    - cron: '22 11 * * 5'
+permissions:
+  contents: write # to push the branch for the PR, see https://github.com/DeterminateSystems/update-flake-lock/issues/88#issuecomment-1774222869
+  pull-requests: write # to open the PR
+  issues: write
+  repository-projects: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Quick install
+        env:
+          _system: ${{ matrix.system }}-linux
+        uses: nixbuild/nix-quick-install-action@v28
+        with:
+          nix_conf: |
+            substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+            keep-going = true
+            show-trace = true
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            keep-outputs = true
+      - name: Update flake.lock
+        id: update
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: DeterminateSystems/update-flake-lock@v24
+        with:
+          pr-title: "Update flake.lock" # Title of PR to be created
+          pr-labels: |                  # Labels to be set on the PR
+            dependencies
+            automated
+          nix-options: --debug --log-format raw
+      - name: Print PR number
+        run: echo Pull request number is ${{ steps.update.outputs.pull-request-number }}.
