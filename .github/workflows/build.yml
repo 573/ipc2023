@@ -8,7 +8,7 @@ on:
       - synchronize
   push:
     branches:
-      - main
+      - bamboovir-template
     paths:
       - "src/**"
       - "resources/**"
@@ -43,14 +43,14 @@ jobs:
 
       - name: Build document
         run: |
-          nix build .#ipc2023 --quiet
+          nix build .#resume --quiet
           cp result/* .
 
       - name: Upload build assets
         uses: actions/upload-artifact@v3
         with:
-          name: ipc2023--PR-${{ github.event.pull_request.number }}--${{ github.sha }}
-          path: ipc2023.pdf
+          name: resume--PR-${{ github.event.pull_request.number }}--${{ github.sha }}
+          path: resume.pdf
 
   release:
     if: github.event_name != 'pull_request'
@@ -80,8 +80,8 @@ jobs:
       - name: Download build assets (${{ matrix.assets.input }})
         uses: actions/download-artifact@v3
         with:
-          name: ipc2023--PR-${{ github.event.pull_request.number }}--${{ github.sha }}
-          path: ipc2023--PR-${{ github.event.pull_request.number }}--${{ github.sha }}
+          name: resume--PR-${{ github.event.pull_request.number }}--${{ github.sha }}
+          path: resume--PR-${{ github.event.pull_request.number }}--${{ github.sha }}
 
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
@@ -89,6 +89,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ipc2023--PR-${{ github.event.pull_request.number }}--${{ github.sha }}/ipc2023.pdf
-          asset_name: ${{ github.run_number }}--ipc2023--${{ github.sha  }}.pdf
+          asset_path: resume--PR-${{ github.event.pull_request.number }}--${{ github.sha }}/resume.pdf
+          asset_name: ${{ github.run_number }}--resume--${{ github.sha  }}.pdf
           asset_content_type: application/pdf
