@@ -2,12 +2,19 @@
   description = "IPC 2023 document";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     systems.url = "github:nix-systems/default";
     typst-dev.url = "github:typst/typst";
     typst-packages = {
       flake = false;
       url = "github:typst/packages";
+    };
+    bamboovir = {
+      url = "github:bamboovir/typst-resume-template"; #?narHash=sha256-WxvEyIRu322YIwBpv9iVHR6YcA46h2kPz9dZB0aTMT0=";
+      flake = false;
+    };
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
     };
   };
 
@@ -18,14 +25,14 @@
       let
         typst = pkgs.typst;
         typst-packages = pkgs.callPackage ./nix/typst-packages.nix { src = inputs.typst-packages; };
-        pdfpc-extractor = pkgs.callPackage ./nix/pdfpc-extractor.nix { };
+        bamboovir = pkgs.callPackage ./nix/bamboovir.nix { src =
+        inputs.bamboovir; formattoml = pkgs.formats.toml { }; };
 
         fontsConf = pkgs.symlinkJoin {
           name = "typst-fonts";
           paths = [
-            pkgs.iosevka
-            pkgs.inconsolata-nerdfont
-            pkgs.fg-virgil
+            pkgs.source-sans-pro
+            pkgs.roboto
           ];
         };
 
@@ -36,10 +43,10 @@
 
           buildInputs = [
             typst
-            pdfpc-extractor
           ];
 
           XDG_CACHE_HOME = typst-packages;
+          XDG_DATA_HOME = "${bamboovir.outPath}";
 
           buildPhase = ''
             runHook preBuild
@@ -48,12 +55,8 @@
               compile \
               --root ./. \
               --font-path ${fontsConf} \
-              ./src/${documentName}/main.typ \
+              ./src/${documentName}/resume.typ \
               ${documentName}.pdf
-
-            ${lib.getExe pdfpc-extractor} \
-              --root ./. \
-              ./src/${documentName}/main.typ
 
             runHook postBuild
           '';
@@ -64,8 +67,6 @@
             mkdir -p $out
             cp ${documentName}.* $out/
 
-            mv ./src/${documentName}/main.pdfpc $out/${documentName}.pdfpc
-
             runHook postInstall
           '';
         };
@@ -74,24 +75,18 @@
           name = "build-${documentName}";
           runtimeInputs = [
             typst
-            pdfpc-extractor
           ];
 
           text = ''
             export XDG_CACHE_HOME=${typst-packages}
+            export XDG_DATA_HOME=${bamboovir}
 
             ${lib.getExe typst} \
               compile \
               --root ./. \
               --font-path ${fontsConf} \
-              ./src/${documentName}/main.typ \
+              ./src/${documentName}/resume.typ \
               ${documentName}.pdf
-
-            ${lib.getExe pdfpc-extractor} \
-              --root ./. \
-              ./src/${documentName}/main.typ
-
-            mv ./src/${documentName}/main.pdfpc ${documentName}.pdfpc
           '';
         };
 
@@ -99,23 +94,17 @@
           name = "watch-${documentName}";
           runtimeInputs = [
             typst
-            pdfpc-extractor
           ];
           text = ''
             export XDG_CACHE_HOME=${typst-packages}
+            export XDG_DATA_HOME=${bamboovir}
 
             ${lib.getExe typst} \
               watch \
               --root ./. \
               --font-path ${fontsConf} \
-              ./src/${documentName}/main.typ \
+              ./src/${documentName}/resume.typ \
               ${documentName}.pdf
-
-            ${lib.getExe pdfpc-extractor} \
-              --root ./. \
-              ./src/${documentName}/main.typ
-
-            mv ./src/${documentName}/main.pdfpc ${documentName}.pdfpc
 
             ${pkgs.inotify-tools}/bin/inotifywait --exclude '\.pdf|\.git' -qre close_write .; \
           '';
@@ -153,14 +142,10 @@
         devShells.default = pkgs.mkShellNoCC {
           name = "typst-devshell";
           buildInputs = (lib.attrValues scriptDrvs) ++ [
-            pdfpc-extractor
             typst
             typst-packages
-            pkgs.asciinema
-            pkgs.gnuplot
-            pkgs.pdfpc
+            bamboovir
             pkgs.typst-fmt
-            pkgs.vhs
           ];
         };
       };
