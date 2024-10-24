@@ -3,14 +3,17 @@
     "bamboovir": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-WxvEyIRu322YIwBpv9iVHR6YcA46h2kPz9dZB0aTMT0=",
-        "type": "file",
-        "url": "https://github.com/bamboovir/typst-resume-template"
+        "lastModified": 1710802363,
+        "narHash": "sha256-tnc0hCwtm9QTlVvrCk25UcaZAjXQeN3zl1OAEOWxDeE=",
+        "owner": "bamboovir",
+        "repo": "typst-resume-template",
+        "rev": "bd2243b188e1969834cf5d94dc2abed4c69886e7",
+        "type": "github"
       },
       "original": {
-        "narHash": "sha256-WxvEyIRu322YIwBpv9iVHR6YcA46h2kPz9dZB0aTMT0=",
-        "type": "file",
-        "url": "https://github.com/bamboovir/typst-resume-template"
+        "owner": "bamboovir",
+        "repo": "typst-resume-template",
+        "type": "github"
       }
     },
     "crane": {
@@ -237,11 +240,11 @@
     "typst-packages": {
       "flake": false,
       "locked": {
-        "lastModified": 1729757165,
-        "narHash": "sha256-l9sf2T09h3zD/1ZatgIEpPBt/BG/5yc7lDFXlUtF2ho=",
+        "lastModified": 1729773179,
+        "narHash": "sha256-bvBnEDrl+zgWEqi2EouVhh4bZoJ9uYyx1eMkj330Sso=",
         "owner": "typst",
         "repo": "packages",
-        "rev": "47433d6d02dc10a38dee1c880e8b298411e1ec47",
+        "rev": "0bf668dc16b396c8fe811ef7de63b46fea7d62a0",
         "type": "github"
       },
       "original": {
