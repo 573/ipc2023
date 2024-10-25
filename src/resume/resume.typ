@@ -4,7 +4,7 @@
 
 #show: resume.with(
   author: (
-      firstname: "Aaaaaaa", 
+      firstname: "Aaaaaaa (Aaaaaa Aaaa)", 
       lastname: "Aaa",
       email: "aaaaaaaaaa@aaaaa.aaa", 
       phone: "(+1) 0000000000",
