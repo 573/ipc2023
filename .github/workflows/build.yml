@@ -14,6 +14,15 @@ on:
       - "resources/**"
       - "**.nix"
       - ".github/workflows/*.yml"
+    inputs:
+      branch:
+        description: Branch name to build on
+        default: ""
+        required: false
+        type: string
+    secrets:
+      CACHIX_ACTIVATE_TOKEN:
+        required: true
 
 jobs:
   dependencies:
@@ -24,7 +33,19 @@ jobs:
       - name: Check out source files
         uses: actions/checkout@v4
 
+
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        yamlbasename:
+          - build.yml
+        os:
+          - ubuntu-latest
+        system:
+          - aarch64
+          - x86_64
+
     name: Build PDF files
     runs-on: ubuntu-latest
     needs: dependencies
@@ -38,13 +59,67 @@ jobs:
       - name: Check out source files
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Install qemu-user-static (aarch64)
+        if: matrix.system == 'aarch64'
+        env:
+          _system: ${{ matrix.system }}-linux
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sudo apt-get update --allow-releaseinfo-change
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
+      - name: Quick install
+        env:
+          _system: ${{ matrix.system }}-linux
+        uses: cachix/install-nix-action@v29
+        with:
+          install_url: 'https://releases.nixos.org/nix/nix-2.24.8/install'
+          extra_nix_config: |
+            substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+            keep-going = true
+            show-trace = true
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            keep-outputs = true
+            ${{ matrix.system == 'aarch64' && 'system = aarch64-linux # enables binfmt on that machine, see https://nixos.wiki/wiki/NixOS_on_ARM#Compiling_through_binfmt_QEMU' || '' }}
+
+      - name: Restore and cache Nix store
+        env:
+          _system: ${{ matrix.system }}-linux
+        uses: nix-community/cache-nix-action@v5
+        with:
+          # save a new cache every time ci file changes
+          primary-key: cache-${{ matrix.os }}-${{ hashFiles('.github/workflows/build.yaml') }}
+          restore-prefixes-first-match: cache-${{ matrix.os }}-
+          # do purge caches
+          purge: true
+          # purge all versions of the cache
+          purge-prefixes: cache-${{ matrix.os }}-
+          # created more than 0 seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
+          # and collect garbage in the Nix store until it reaches this size in bytes
+          gc-max-store-size: 8000000000
+
+      - name: Setup cachix
+        env:
+          _system: ${{ matrix.system }}-linux
+        uses: cachix/cachix-action@v15
+        with:
+          name: 573-bc
+          authToken: ${{ secrets.CACHIX_ACTIVATE_TOKEN }}
 
       - name: Build document
+        env:
+          _system: ${{ matrix.system }}-linux
         run: |
-          nix build .#resume --quiet
-          cp result/* .
+            cachix use 573-bc
+            cachix use nix-on-droid
+            ${{ (matrix.system == 'aarch64') && 'cachix watch-exec 573-bc -- \' || '' }}
+            nix build .#resume --quiet
+            cp result/* .
 
       - name: Upload build assets
         uses: actions/upload-artifact@v3

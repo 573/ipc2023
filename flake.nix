@@ -13,6 +13,10 @@
       url = "github:bamboovir/typst-resume-template"; #?narHash=sha256-WxvEyIRu322YIwBpv9iVHR6YcA46h2kPz9dZB0aTMT0=";
       flake = false;
     };
+    imprecv = {
+      url = "github:jskherman/imprecv";
+      flake = false;
+    };
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
     };
@@ -83,7 +87,7 @@
 
             ${lib.getExe typst} \
               compile \
-              --root ./. \
+              --root ./.. \
               --font-path ${fontsConf} \
               ./src/${documentName}/resume.typ \
               ${documentName}.pdf
@@ -147,6 +151,9 @@
             bamboovir
             pkgs.typst-fmt
           ];
+          shellHook = ''
+            echo Use '# yaml-language-server: $schema=${inputs.imprecv}/cv.typ.schema.json' as header in the yml file
+          '';
         };
       };
   };
